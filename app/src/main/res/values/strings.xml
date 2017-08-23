@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">BLEBeacon</string>
 
+    <!--text-->
     <string name="not_support_BLE_text">Bluetooth LE is not supported in this devices!!</string>
+    <string name="hint_amount">50000</string>
+    <string name="request_money">Request money</string>
+
+    <!--uuid-->
     <string name="uuid">00001011-0000-1000-8000-00805f9b34fb</string>
+
+    <!--button text-->
+    <string name="request">Request</string>
+    <string name="scan">Scan</string>
 </resources>

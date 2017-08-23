@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:weightSum="1">
     <android.support.v7.widget.RecyclerView
-        android:visibility="gone"
         android:id="@+id/recycleView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -12,18 +11,14 @@
     </android.support.v7.widget.RecyclerView>
     <TextView
         android:textSize="18sp"
-        android:id="@+id/serviceUUID"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:textSize="18sp"
         android:id="@+id/serviceData"
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
     <Button
         android:layout_gravity="center"
         android:id="@+id/btnScan"
-        android:text="scan"
+        android:text="@string/scan"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

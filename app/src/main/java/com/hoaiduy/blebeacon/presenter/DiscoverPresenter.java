@@ -1,7 +1,7 @@
 package com.hoaiduy.blebeacon.presenter;
 
-import android.bluetooth.le.ScanFilter;
-import android.content.Context;
+import android.app.Activity;
+import android.bluetooth.BluetoothDevice;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v7.widget.RecyclerView;
@@ -17,15 +17,15 @@ import java.util.ArrayList;
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class DiscoverPresenter {
 
-    private Context mContext;
-    private ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
+    private Activity activity;
+    private ArrayList<BluetoothDevice> mDevicelist = new ArrayList<BluetoothDevice>();
 
-    public DiscoverPresenter(Context context) {
-        this.mContext = context;
+    public DiscoverPresenter(Activity activity) {
+        this.activity = activity;
     }
 
     public void setupRecycleView(RecyclerView recyclerView){
-        BLEDeviceAdapter adapter = new BLEDeviceAdapter(filters);
+        BLEDeviceAdapter adapter = new BLEDeviceAdapter(mDevicelist, activity);
         recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
     }
