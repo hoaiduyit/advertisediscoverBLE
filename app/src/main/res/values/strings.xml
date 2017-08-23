@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">BLEBeacon</string>
+
+    <string name="not_support_BLE_text">Bluetooth LE is not supported in this devices!!</string>
+    <string name="uuid">00001011-0000-1000-8000-00805f9b34fb</string>
+</resources>
