@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.ParcelUuid;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,7 +31,7 @@ import java.util.UUID;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.btnAdvertise)
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnRequest;
     EditText txtAmount;
+    TextView txtTitle;
     BluetoothLeAdvertiser advertiser;
     private String indicator;
     private String amountData;
@@ -115,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         btnRequest = dialog.findViewById(R.id.btnRequest);
         txtAmount = dialog.findViewById(R.id.txtAmount);
+        txtTitle = dialog.findViewById(R.id.txtTitle);
+        txtTitle.setText(getString(R.string.request_money));
 
         btnAdvertise.setOnClickListener(view -> {
             if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON){
@@ -126,8 +130,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         btnDiscover.setOnClickListener(view -> {
-            Intent intent = new Intent(this, BLEDiscoveryActivity.class);
-            startActivity(intent);
+            if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON){
+                advertiser.stopAdvertising(advertiseCallback);
+                ll_adv.setVisibility(View.GONE);
+                Intent intent = new Intent(this, BLEDiscoveryActivity.class);
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(this, BLEDiscoveryActivity.class);
+                startActivity(intent);
+            }
         });
 
         btnRequest.setOnClickListener(view -> {
@@ -138,9 +149,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void advertise(String text) {
-        indicator = "mypay:";
+        indicator = "mp:";
         amountData = text;
-        byte[] serviceData = (indicator + amountData).getBytes();
+
+        String dataName = indicator + amountData;
+
+        byte[] byteArr = dataName.getBytes();
+        byte[] decode = Base64.encode(byteArr, Base64.DEFAULT);
+
+        String stringByte = new String(decode);
+
+        mBluetoothAdapter.setName(stringByte);
 
         AdvertiseSettings settings = new AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
@@ -152,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
 
         AdvertiseData data = new AdvertiseData.Builder()
                 .addServiceUuid(uuid)
-                .addServiceData(uuid, serviceData)
+                .setIncludeDeviceName(true)
                 .build();
 
         advertiser.startAdvertising(settings, data, advertiseCallback);
@@ -165,15 +184,16 @@ public class MainActivity extends AppCompatActivity {
             String[] split = indicator.split(":");
             String indicatorMypay = split[0];
 
-            txtUuid.setText(getString(R.string.uuid));
-            txtIndicator.setText(indicatorMypay);
-            txtViewAmount.setText(amountData);
+            txtUuid.setText("Advertising..");
+            txtIndicator.setText("Indicator: " + indicatorMypay);
+            txtViewAmount.setText("Amount: " + amountData);
             Log.w("TAG", "GATT service ready");
         }
 
         @Override
         public void onStartFailure(int errorCode) {
             super.onStartFailure(errorCode);
+            txtUuid.setText("Advertise failed");
             Log.e("TAG", "GATT Server Error " + errorCode);
         }
     };

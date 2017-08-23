@@ -10,7 +10,6 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.widget.Button;
-import android.widget.TextView;
 
 import com.hoaiduy.blebeacon.presenter.DiscoverPresenter;
 
@@ -28,8 +27,6 @@ public class BLEDiscoveryActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     @BindView(R.id.btnScan)
     Button btnScan;
-    @BindView(R.id.serviceData)
-    TextView serviceData;
 
     RecyclerView.LayoutManager layoutManager;
     private DiscoverPresenter presenter;
