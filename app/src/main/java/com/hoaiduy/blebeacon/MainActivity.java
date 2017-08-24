@@ -62,10 +62,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
-        advertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
 
         if (!this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             btnAdvertise.setEnabled(false);
@@ -75,9 +73,6 @@ public class MainActivity extends AppCompatActivity {
         if (!mBluetoothAdapter.isEnabled()){
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, MY_BLUETOOTH_ENABLE_REQUEST_ID);
-            setupUI();
-        } else {
-            setupUI();
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
@@ -92,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
                 builder.show();
             }
         }
+
+        setupUI();
     }
 
     @Override
@@ -179,11 +176,8 @@ public class MainActivity extends AppCompatActivity {
                 .addServiceUuid(uuid)
                 .setIncludeDeviceName(true)
                 .build();
-        try {
-            advertiser.startAdvertising(settings, data, advertiseCallback);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        advertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
+        advertiser.startAdvertising(settings, data, advertiseCallback);
     }
 
     private AdvertiseCallback advertiseCallback = new AdvertiseCallback() {
