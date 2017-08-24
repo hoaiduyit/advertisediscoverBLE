@@ -126,9 +126,7 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
             public void onScanResult(int callbackType, ScanResult result) {
                 if (result != null){
                     scanRecord = result.getScanRecord();
-
                     BluetoothDevice device = result.getDevice();
-                    Log.d("TAG", scanRecord.toString());
                     List<ParcelUuid> serviceUUIDs = scanRecord.getServiceUuids();
                     for (ParcelUuid uuid1 : serviceUUIDs){
                         if (uuid1.equals(uuid)){
