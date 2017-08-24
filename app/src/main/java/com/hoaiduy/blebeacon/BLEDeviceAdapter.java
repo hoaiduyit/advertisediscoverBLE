@@ -144,8 +144,10 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
                                 mDeviceList.add(device);
                                 removeDuplicateWithOrder(mDeviceList);
                                 notifyDataSetChanged();
-                                if (mDeviceList.size() < 2){
-                                    txtAmountSend.setText("Do you want to send " + amount);
+                                if (mDeviceList.size() != 0){
+                                    if (mDeviceList.size() < 2){
+                                        txtAmountSend.setText("Do you want to send " + amount);
+                                    }
                                 }
                             }
                         }
@@ -178,9 +180,13 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
                 mHandler.postDelayed(() -> {
                     mBluetoothLeScanner.stopScan(mCallback);
                     progressDialog.show();
-                    if (mDeviceList.size() < 2){
-                        progressDialog.dismiss();
-                        dialog.show();
+                    if (mDeviceList.size() != 0){
+                        if (mDeviceList.size() < 2){
+                            progressDialog.dismiss();
+                            dialog.show();
+                        } else {
+                            progressDialog.dismiss();
+                        }
                     } else {
                         progressDialog.dismiss();
                     }
