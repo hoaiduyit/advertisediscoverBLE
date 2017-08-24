@@ -43,15 +43,10 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
+            android:layout_below="@+id/ll_recycle"
             android:layout_alignParentStart="true">
             <TextView
                 android:id="@+id/txtUuid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="18sp"/>
-            <TextView
-                android:id="@+id/txtIndicator"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="18sp"/>

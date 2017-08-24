@@ -40,8 +40,6 @@ public class MainActivity extends AppCompatActivity {
     Button btnDiscover;
     @BindView(R.id.txtUuid)
     TextView txtUuid;
-    @BindView(R.id.txtIndicator)
-    TextView txtIndicator;
     @BindView(R.id.txtAmount)
     TextView txtViewAmount;
     @BindView(R.id.ll_adv)
@@ -57,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
+    private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +72,13 @@ public class MainActivity extends AppCompatActivity {
             btnDiscover.setEnabled(false);
         }
 
-        setupUI();
+        if (!mBluetoothAdapter.isEnabled()){
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, MY_BLUETOOTH_ENABLE_REQUEST_ID);
+            setupUI();
+        } else {
+            setupUI();
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             // Android M Permission check 
@@ -121,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         txtTitle.setText(getString(R.string.request_money));
 
         btnAdvertise.setOnClickListener(view -> {
-            if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON){
+            if (advertiser != null){
                 advertiser.stopAdvertising(advertiseCallback);
                 ll_adv.setVisibility(View.GONE);
                 dialog.show();
@@ -129,13 +134,14 @@ public class MainActivity extends AppCompatActivity {
                 dialog.show();
             }
         });
+
         btnDiscover.setOnClickListener(view -> {
-            if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON){
+            if (advertiser != null){
                 advertiser.stopAdvertising(advertiseCallback);
                 ll_adv.setVisibility(View.GONE);
                 Intent intent = new Intent(this, BLEDiscoveryActivity.class);
                 startActivity(intent);
-            } else {
+            }else {
                 Intent intent = new Intent(this, BLEDiscoveryActivity.class);
                 startActivity(intent);
             }
@@ -173,19 +179,18 @@ public class MainActivity extends AppCompatActivity {
                 .addServiceUuid(uuid)
                 .setIncludeDeviceName(true)
                 .build();
-
-        advertiser.startAdvertising(settings, data, advertiseCallback);
+        try {
+            advertiser.startAdvertising(settings, data, advertiseCallback);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     private AdvertiseCallback advertiseCallback = new AdvertiseCallback() {
         @Override
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             super.onStartSuccess(settingsInEffect);
-            String[] split = indicator.split(":");
-            String indicatorMypay = split[0];
-
             txtUuid.setText("Advertising..");
-            txtIndicator.setText("Indicator: " + indicatorMypay);
             txtViewAmount.setText("Amount: " + amountData);
             Log.w("TAG", "GATT service ready");
         }

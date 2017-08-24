@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <TextView
+        android:layout_margin="10dp"
+        android:id="@+id/txtAmountSend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"/>
+    <LinearLayout
+        android:layout_margin="10dp"
+        android:layout_gravity="end"
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/btnNo"
+            android:text="@string/no"
+            android:textSize="18sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <android.support.v4.widget.Space
+            android:layout_width="20dp"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/btnYes"
+            android:textSize="18sp"
+            android:text="@string/yes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</LinearLayout>

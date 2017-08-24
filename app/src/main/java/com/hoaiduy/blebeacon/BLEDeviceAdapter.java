@@ -2,6 +2,7 @@ package com.hoaiduy.blebeacon;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -22,10 +23,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.hoaiduy.blebeacon.utils.DialogUtils;
+
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import butterknife.BindView;
@@ -47,6 +54,8 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
     private ScanCallback mCallback;
     private ScanRecord scanRecord;
     private Dialog dialog;
+    TextView txtAmountSend, btnNo, btnYes;
+    public ProgressDialog progressDialog;
 
     public BLEDeviceAdapter(ArrayList<BluetoothDevice> devices, Activity activity){
         this.mDeviceList = devices;
@@ -66,13 +75,20 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
             Scan(true);
         }
 
+        progressDialog = DialogUtils.getLoadingProgressDialog(activity);
+
         setupDialog();
     }
 
     private void setupDialog() {
         dialog = new Dialog(activity);
         dialog.setContentView(R.layout.dialog_discover);
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        txtAmountSend = dialog.findViewById(R.id.txtAmountSend);
+        btnNo = dialog.findViewById(R.id.btnNo);
+        btnYes = dialog.findViewById(R.id.btnYes);
 
+        btnNo.setOnClickListener(view -> dialog.dismiss());
     }
 
     @Override
@@ -83,24 +99,17 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
 
     @Override
     public void onBindViewHolder(DeviceHolder holder, int position) {
-        assert scanRecord != null;
-        List<ParcelUuid> serviceUUIDs = scanRecord.getServiceUuids();
-        for (ParcelUuid uuid1 : serviceUUIDs){
-            if (uuid1.equals(uuid)){
-                String dataName = scanRecord.getDeviceName();
-                assert dataName != null;
-                byte[] convert = dataName.getBytes();
-                byte[] byteArr = Base64.decode(convert, Base64.DEFAULT);
-                String encode = new String(byteArr);
-                String[] sub = encode.split(":");
-                String indicator = sub[0];
-                String amount = sub[1];
-                if (indicator.equalsIgnoreCase("mp")){
-                    holder.serviceData.setText("Amount: " + amount);
-                }
-            }
-        }
-        holder.serviceData.setOnClickListener(view -> {
+        BluetoothDevice bluetoothDevice = mDeviceList.get(position);
+        String dataName = bluetoothDevice.getName();
+        assert dataName != null;
+        byte[] convert = dataName.getBytes();
+        byte[] byteArr = Base64.decode(convert, Base64.DEFAULT);
+        String encode = new String(byteArr);
+        String[] sub = encode.split(":");
+        String amount = sub[1];
+        holder.serviceData.setText("Amount: " + amount);
+        holder.ll_item.setOnClickListener(view -> {
+            txtAmountSend.setText("Do you want to send " + amount);
             dialog.show();
         });
     }
@@ -115,11 +124,9 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
         mCallback = new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
-                super.onScanResult(callbackType, result);
-                Log.d("TAG", "Discover scan result");
                 if (result != null){
-                    assert scanRecord != null;
                     scanRecord = result.getScanRecord();
+
                     BluetoothDevice device = result.getDevice();
                     Log.d("TAG", scanRecord.toString());
                     List<ParcelUuid> serviceUUIDs = scanRecord.getServiceUuids();
@@ -132,9 +139,14 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
                             String encode = new String(byteArr);
                             String[] sub = encode.split(":");
                             String indicator = sub[0];
+                            String amount = sub[1];
                             if (indicator.equalsIgnoreCase("mp")){
                                 mDeviceList.add(device);
+                                removeDuplicateWithOrder(mDeviceList);
                                 notifyDataSetChanged();
+                                if (mDeviceList.size() < 2){
+                                    txtAmountSend.setText("Do you want to send " + amount);
+                                }
                             }
                         }
                     }
@@ -149,7 +161,7 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
             @Override
             public void onScanFailed(int errorCode) {
                 super.onScanFailed(errorCode);
-                Log.e("TAG", "Scan failed" + errorCode);
+                Log.e("TAG", "Scan failed " + errorCode);
             }
         };
 
@@ -163,9 +175,19 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
                 .build();
         try {
             if (enable){
-                mHandler.postDelayed(() -> mBluetoothLeScanner.stopScan(mCallback), 3000);
+                mHandler.postDelayed(() -> {
+                    mBluetoothLeScanner.stopScan(mCallback);
+                    progressDialog.show();
+                    if (mDeviceList.size() < 2){
+                        progressDialog.dismiss();
+                        dialog.show();
+                    } else {
+                        progressDialog.dismiss();
+                    }
+                }, 3000);
                 mBluetoothLeScanner.startScan(filters, settings, mCallback);
             }else {
+                progressDialog.dismiss();
                 mBluetoothLeScanner.stopScan(mCallback);
             }
         }catch (Exception e){
@@ -174,9 +196,26 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
 
     }
 
+    private static List<BluetoothDevice> removeDuplicateWithOrder(List<BluetoothDevice> arrList)
+    {
+        Set<Object> set = new HashSet<>();
+        List newList = new ArrayList();
+        for (Iterator<BluetoothDevice> iter = arrList.iterator(); iter.hasNext();) {
+            Object element = iter.next();
+            if (set.add(element))
+                newList.add(element);
+        }
+        arrList.clear();
+        arrList.addAll(newList);
+
+        return arrList;
+    }
+
     class DeviceHolder extends RecyclerView.ViewHolder {
         @BindView(R.id.serviceData)
         TextView serviceData;
+        @BindView(R.id.ll_item)
+        LinearLayout ll_item;
 
         public DeviceHolder(View itemView) {
             super(itemView);

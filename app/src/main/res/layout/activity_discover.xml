@@ -1,25 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:weightSum="1">
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <!--<TextView-->
+        <!--android:id="@+id/txtSend"-->
+        <!--android:visibility="gone"-->
+        <!--android:text="@string/send_success"-->
+        <!--android:textSize="18sp"-->
+        <!--android:textStyle="bold"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content" />-->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycleView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.98">
+        android:layout_height="match_parent">
     </android.support.v7.widget.RecyclerView>
-    <TextView
-        android:textSize="18sp"
-        android:id="@+id/serviceData"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-    <Button
-        android:layout_gravity="center"
-        android:id="@+id/btnScan"
-        android:text="@string/scan"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 
 </LinearLayout>

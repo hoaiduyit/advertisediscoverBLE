@@ -14,7 +14,7 @@ import java.util.ArrayList;
  * Created by hoaiduy2503 on 8/22/2017.
  */
 
-@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class DiscoverPresenter {
 
     private Activity activity;
