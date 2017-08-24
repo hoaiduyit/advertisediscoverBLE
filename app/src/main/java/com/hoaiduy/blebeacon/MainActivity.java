@@ -17,6 +17,9 @@ import android.os.Bundle;
 import android.os.ParcelUuid;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -25,6 +28,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.hoaiduy.blebeacon.presenter.DiscoverPresenter;
 
 import java.util.UUID;
 
@@ -44,11 +49,19 @@ public class MainActivity extends AppCompatActivity {
     TextView txtViewAmount;
     @BindView(R.id.ll_adv)
     LinearLayout ll_adv;
+    @BindView(R.id.ll_recycle)
+    LinearLayout ll_recycle;
+    @BindView(R.id.recycleView)
+    RecyclerView recyclerView;
+
+    RecyclerView.LayoutManager layoutManager;
 
     Button btnRequest;
     EditText txtAmount;
     TextView txtTitle;
     BluetoothLeAdvertiser advertiser;
+    DiscoverPresenter presenter;
+
     private String indicator;
     private String amountData;
     private Dialog dialog;
@@ -89,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setupUI();
+        setupDiscoverUI();
     }
 
     @Override
@@ -136,19 +150,28 @@ public class MainActivity extends AppCompatActivity {
             if (advertiser != null){
                 advertiser.stopAdvertising(advertiseCallback);
                 ll_adv.setVisibility(View.GONE);
-                Intent intent = new Intent(this, BLEDiscoveryActivity.class);
-                startActivity(intent);
+                ll_recycle.setVisibility(View.VISIBLE);
+                presenter.setupRecycleView(recyclerView);
             }else {
-                Intent intent = new Intent(this, BLEDiscoveryActivity.class);
-                startActivity(intent);
+                ll_recycle.setVisibility(View.VISIBLE);
+                presenter.setupRecycleView(recyclerView);
             }
         });
 
         btnRequest.setOnClickListener(view -> {
             ll_adv.setVisibility(View.VISIBLE);
+            ll_recycle.setVisibility(View.GONE);
             dialog.dismiss();
             advertise(txtAmount.getText().toString());
         });
+    }
+
+
+    private void setupDiscoverUI() {
+        layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        presenter = new DiscoverPresenter(this);
     }
 
     private void advertise(String text) {
