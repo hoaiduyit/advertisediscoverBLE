@@ -61,7 +61,7 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
         this.mDeviceList = devices;
         this.activity = activity;
 
-        uuid = new ParcelUuid(UUID.fromString("00001011-0000-1000-8000-00805f9b34fb"));
+        uuid = new ParcelUuid(UUID.fromString(activity.getString(R.string.uuid)));
         mHandler = new Handler();
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) activity.getSystemService(Context.BLUETOOTH_SERVICE);
