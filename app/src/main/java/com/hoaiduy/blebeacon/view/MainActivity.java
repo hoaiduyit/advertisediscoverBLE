@@ -1,37 +1,36 @@
-package com.hoaiduy.blebeacon;
+package com.hoaiduy.blebeacon.view;
 
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.AdvertiseCallback;
-import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
-import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.ParcelUuid;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.hoaiduy.blebeacon.presenter.DiscoverPresenter;
+import com.hoaiduy.blebeacon.R;
+import com.hoaiduy.blebeacon.advertise.AdvertiseBLE;
+import com.hoaiduy.blebeacon.discover.DiscoverBLE;
+import com.hoaiduy.blebeacon.utils.DialogUtils;
 
-import java.util.UUID;
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -39,36 +38,37 @@ import butterknife.ButterKnife;
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class MainActivity extends AppCompatActivity {
 
+    private AdvertiseBLE advertiseBLE;
+    private DiscoverBLE discoverBLE;
+    private BLEDeviceAdapter adapter;
+    private ArrayList<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
+
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
+    private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
+
     @BindView(R.id.btnAdvertise)
     Button btnAdvertise;
     @BindView(R.id.btnDiscover)
     Button btnDiscover;
-    @BindView(R.id.txtUuid)
-    TextView txtUuid;
-    @BindView(R.id.txtAmount)
-    TextView txtViewAmount;
-    @BindView(R.id.ll_adv)
-    LinearLayout ll_adv;
     @BindView(R.id.ll_recycle)
     LinearLayout ll_recycle;
+    @BindView(R.id.ll_adv)
+    LinearLayout ll_adv;
+    @BindView(R.id.txtState)
+    TextView txtState;
+    @BindView(R.id.txtAmount)
+    TextView txtViewAmount;
     @BindView(R.id.recycleView)
     RecyclerView recyclerView;
 
     RecyclerView.LayoutManager layoutManager;
 
-    Button btnRequest;
-    EditText txtAmount;
-    TextView txtTitle;
-    BluetoothLeAdvertiser advertiser;
-    DiscoverPresenter presenter;
-
-    private String indicator;
-    private String amountData;
     private Dialog dialog;
-    private BluetoothAdapter mBluetoothAdapter;
-
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
-    private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
+    Button btnRequest;
+    TextView txtAmount, txtTitle;
+    private ProgressDialog progressDialog;
+    private Dialog dialogItem;
+    TextView txtAmountSend, btnNo, btnYes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
 
         if (!this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             btnAdvertise.setEnabled(false);
@@ -101,14 +101,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        advertiseBLE = new AdvertiseBLE(this);
+        discoverBLE = new DiscoverBLE(this, mDeviceList);
+
         setupUI();
         setupDiscoverUI();
+        setupDialog();
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[],
-                                           int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
             case PERMISSION_REQUEST_COARSE_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -122,12 +124,11 @@ public class MainActivity extends AppCompatActivity {
                     });
                     builder.show();
                 }
-                return;
             }
         }
     }
 
-    private void setupUI(){
+    private void setupUI() {
         dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_advertise);
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -137,86 +138,94 @@ public class MainActivity extends AppCompatActivity {
         txtTitle.setText(getString(R.string.request_money));
 
         btnAdvertise.setOnClickListener(view -> {
-            if (advertiser != null){
-                advertiser.stopAdvertising(advertiseCallback);
+            if (advertiseBLE.isAdvertising()){
+                advertiseBLE.stopAdvertise();
                 ll_adv.setVisibility(View.GONE);
                 dialog.show();
             } else {
-                dialog.show();
+               dialog.show();
             }
         });
 
         btnDiscover.setOnClickListener(view -> {
-            if (advertiser != null){
-                advertiser.stopAdvertising(advertiseCallback);
-                ll_adv.setVisibility(View.GONE);
-                ll_recycle.setVisibility(View.VISIBLE);
-                presenter.setupRecycleView(recyclerView);
-            }else {
-                ll_recycle.setVisibility(View.VISIBLE);
-                presenter.setupRecycleView(recyclerView);
+            progressDialog = DialogUtils.getLoadingProgressDialog(this);
+            if (mDeviceList.isEmpty()){
+                if (advertiseBLE.isAdvertising()){
+                    isAdvertising();
+                }else {
+                    notAdvertising();
+                }
+            } else {
+                mDeviceList.clear();
+                if (advertiseBLE.isAdvertising()){
+                    isAdvertising();
+                }else {
+                    notAdvertising();
+                }
             }
         });
 
         btnRequest.setOnClickListener(view -> {
-            ll_adv.setVisibility(View.VISIBLE);
-            ll_recycle.setVisibility(View.GONE);
-            dialog.dismiss();
-            advertise(txtAmount.getText().toString());
+            if (ll_recycle.getVisibility() == View.VISIBLE){
+                String amount = txtAmount.getText().toString();
+                ll_adv.setVisibility(View.VISIBLE);
+                ll_recycle.setVisibility(View.GONE);
+                dialog.dismiss();
+                advertiseBLE.startAdvertise(amount,
+                        getString(R.string.uuid),
+                        txtState,
+                        txtViewAmount);
+            } else {
+                String amount = txtAmount.getText().toString();
+                ll_adv.setVisibility(View.VISIBLE);
+                dialog.dismiss();
+                advertiseBLE.startAdvertise(amount,
+                        getString(R.string.uuid),
+                        txtState,
+                        txtViewAmount);
+            }
         });
     }
 
+    private void notAdvertising() {
+        discoverBLE.startScan(getString(R.string.uuid),
+                dialogItem,
+                txtAmountSend,
+                progressDialog,
+                adapter);
+        ll_recycle.setVisibility(View.VISIBLE);
+        recyclerView.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+    }
+
+    private void isAdvertising() {
+        advertiseBLE.stopAdvertise();
+        discoverBLE.startScan(getString(R.string.uuid),
+                dialogItem,
+                txtAmountSend,
+                progressDialog,
+                adapter);
+        ll_adv.setVisibility(View.GONE);
+        ll_recycle.setVisibility(View.VISIBLE);
+        recyclerView.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+    }
 
     private void setupDiscoverUI() {
         layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-        presenter = new DiscoverPresenter(this);
+        adapter = new BLEDeviceAdapter(this, mDeviceList);
     }
 
-    private void advertise(String text) {
-        indicator = "mp:";
-        amountData = text;
+    private void setupDialog() {
+        dialogItem = new Dialog(this);
+        dialogItem.setContentView(R.layout.dialog_discover);
+        dialogItem.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        txtAmountSend = dialogItem.findViewById(R.id.txtAmountSend);
+        btnNo = dialogItem.findViewById(R.id.btnNo);
+        btnYes = dialogItem.findViewById(R.id.btnYes);
 
-        String dataName = indicator + amountData;
-
-        byte[] byteArr = dataName.getBytes();
-        byte[] decode = Base64.encode(byteArr, Base64.DEFAULT);
-
-        String stringByte = new String(decode);
-
-        mBluetoothAdapter.setName(stringByte);
-
-        AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_LOW)
-                .setConnectable(true)
-                .build();
-
-        ParcelUuid uuid = new ParcelUuid(UUID.fromString(getString(R.string.uuid)));
-
-        AdvertiseData data = new AdvertiseData.Builder()
-                .addServiceUuid(uuid)
-                .setIncludeDeviceName(true)
-                .build();
-        advertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
-        advertiser.startAdvertising(settings, data, advertiseCallback);
+        btnNo.setOnClickListener(view -> dialogItem.dismiss());
     }
-
-    private AdvertiseCallback advertiseCallback = new AdvertiseCallback() {
-        @Override
-        public void onStartSuccess(AdvertiseSettings settingsInEffect) {
-            super.onStartSuccess(settingsInEffect);
-            txtUuid.setText("Advertising..");
-            txtViewAmount.setText("Amount: " + amountData);
-            Log.w("TAG", "GATT service ready");
-        }
-
-        @Override
-        public void onStartFailure(int errorCode) {
-            super.onStartFailure(errorCode);
-            txtUuid.setText("Advertise failed");
-            Log.e("TAG", "GATT Server Error " + errorCode);
-        }
-    };
 }
