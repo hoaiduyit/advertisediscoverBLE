@@ -24,7 +24,6 @@ import com.hoaiduy.blebeacon.view.BLEDeviceAdapter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -145,19 +144,18 @@ public class DiscoverBLE {
 
     }
 
-    private static List<BluetoothDevice> removeDuplicateWithOrder(List<BluetoothDevice> arrList)
+    private static List<BluetoothDevice> removeDuplicateWithOrder(List<BluetoothDevice> deviceList)
     {
         Set<Object> set = new HashSet<>();
         List newList = new ArrayList();
-        for (Iterator<BluetoothDevice> iter = arrList.iterator(); iter.hasNext();) {
-            Object element = iter.next();
-            if (set.add(element))
-                newList.add(element);
+        for (BluetoothDevice device : deviceList) {
+            if (set.add(device))
+                newList.add(device);
         }
-        arrList.clear();
-        arrList.addAll(newList);
+        deviceList.clear();
+        deviceList.addAll(newList);
 
-        return arrList;
+        return deviceList;
     }
 
 }
