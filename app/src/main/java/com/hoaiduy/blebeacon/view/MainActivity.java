@@ -137,13 +137,17 @@ public class MainActivity extends AppCompatActivity {
         txtTitle = dialog.findViewById(R.id.txtTitle);
         txtTitle.setText(getString(R.string.request_money));
 
+        addControls();
+    }
+
+    private void addControls() {
         btnAdvertise.setOnClickListener(view -> {
             if (advertiseBLE.isAdvertising()){
                 advertiseBLE.stopAdvertise();
                 ll_adv.setVisibility(View.GONE);
                 dialog.show();
             } else {
-               dialog.show();
+                dialog.show();
             }
         });
 
