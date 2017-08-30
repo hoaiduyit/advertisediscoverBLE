@@ -30,6 +30,15 @@ public class AdvertiseBLE {
     private AdvertiseCallback advertiseCallback;
     private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
 
+    private int mAdvertiseState = advertiseFail;
+    private static final int advertiseFail = 0;
+    private static final int advertiseSuccess = 1;
+
+    public final static String ACTION_ADVERTISE_SUCCESS =
+            "com.hoaiduy.blebeacon.advertise.ACTION_ADVERTISE_SUCCESS";
+    public final static String ACTION_ADVERTISE_FAIL =
+            "com.hoaiduy.blebeacon.advertise.ACTION_ADVERTISE_FAIL";
+
     public AdvertiseBLE(Activity activity){
         this.mActivity = activity;
         BluetoothManager mBluetoothManager = (BluetoothManager) activity.getSystemService(Activity.BLUETOOTH_SERVICE);
@@ -53,13 +62,21 @@ public class AdvertiseBLE {
          advertiseCallback = new AdvertiseCallback() {
             @Override
             public void onStartSuccess(AdvertiseSettings settingsInEffect) {
+                String intentAction;
                 super.onStartSuccess(settingsInEffect);
+                mAdvertiseState = advertiseSuccess;
+                intentAction = ACTION_ADVERTISE_SUCCESS;
+                broadcastUpdate(intentAction);
                 Log.w("TAG", "GATT service ready");
             }
 
             @Override
             public void onStartFailure(int errorCode) {
+                String intentAction;
                 super.onStartFailure(errorCode);
+                mAdvertiseState = advertiseFail;
+                intentAction = ACTION_ADVERTISE_FAIL;
+                broadcastUpdate(intentAction);
                 switch (errorCode) {
                     case AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED:
                         Log.e("TAG", mActivity.getString(R.string.already_started));
@@ -101,5 +118,10 @@ public class AdvertiseBLE {
     //stop advertising
     public void stopAdvertise(){
         advertiser.stopAdvertising(advertiseCallback);
+    }
+
+    private void broadcastUpdate(final String action) {
+        final Intent intent = new Intent(action);
+        mActivity.sendBroadcast(intent);
     }
 }

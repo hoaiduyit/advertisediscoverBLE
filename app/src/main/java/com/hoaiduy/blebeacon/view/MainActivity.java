@@ -5,6 +5,10 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -122,6 +126,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(mReceiver, makeGattUpdateIntentFilter());
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(mReceiver);
+    }
+
     private void setupUI() {
         dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_advertise);
@@ -173,10 +189,6 @@ public class MainActivity extends AppCompatActivity {
             ll_recycle.setVisibility(View.GONE);
             dialog.dismiss();
             advertiseBLE.startAdvertise(stringByte, getString(R.string.uuid));
-            if (advertiseBLE.isAdvertising()){
-                txtState.setText("Advertising..");
-                txtViewAmount.setText(amount);
-            }
         });
     }
 
@@ -244,5 +256,25 @@ public class MainActivity extends AppCompatActivity {
         btnYes = dialogItem.findViewById(R.id.btnYes);
 
         btnNo.setOnClickListener(view -> dialogItem.dismiss());
+    }
+
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (AdvertiseBLE.ACTION_ADVERTISE_SUCCESS.equals(action)){
+                txtState.setText("Advertising...");
+            } else if (AdvertiseBLE.ACTION_ADVERTISE_FAIL.equals(action)){
+                txtState.setText("Advertise failed");
+            }
+        }
+    };
+
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(AdvertiseBLE.ACTION_ADVERTISE_SUCCESS);
+        intentFilter.addAction(AdvertiseBLE.ACTION_ADVERTISE_FAIL);
+        return intentFilter;
     }
 }
