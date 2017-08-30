@@ -7,6 +7,13 @@
     <string name="send_success">Send money successful!!!</string>
     <string name="request_money">Request money</string>
 
+    <!--error text-->
+    <string name="already_started">Advertise failed: already started</string>
+    <string name="data_too_large">Advertise failed: data too large</string>
+    <string name="feature_unsupported">Advertise failed: feature unsupported</string>
+    <string name="internal_error">Advertise failed: internal error</string>
+    <string name="too_many_advertisers">Advertise failed: too many advertisers</string>
+
     <!--uuid-->
     <string name="uuid">00001011-0000-1000-8000-00805f9b34fb</string>
 

@@ -14,6 +14,8 @@ import android.util.Base64;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.hoaiduy.blebeacon.R;
+
 import java.util.UUID;
 
 /**
@@ -55,9 +57,31 @@ public class AdvertiseBLE {
             @Override
             public void onStartFailure(int errorCode) {
                 super.onStartFailure(errorCode);
-                textState.setText("Failed to advertising");
+                String errorText = null;
                 textAmount.setText("");
-                Log.e("TAG", "GATT Server Error " + errorCode);
+                switch (errorCode) {
+                    case AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED:
+                        errorText = mContext.getString(R.string.already_started);
+                        Log.e("TAG", mContext.getString(R.string.already_started));
+                        break;
+                    case AdvertiseCallback.ADVERTISE_FAILED_DATA_TOO_LARGE:
+                        errorText = mContext.getString(R.string.data_too_large);
+                        Log.e("TAG", mContext.getString(R.string.data_too_large));
+                        break;
+                    case AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED:
+                        errorText = mContext.getString(R.string.feature_unsupported);
+                        Log.e("TAG", mContext.getString(R.string.feature_unsupported));
+                        break;
+                    case AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR:
+                        errorText = mContext.getString(R.string.internal_error);
+                        Log.e("TAG", mContext.getString(R.string.internal_error));
+                        break;
+                    case AdvertiseCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS:
+                        errorText = mContext.getString(R.string.too_many_advertisers);
+                        Log.e("TAG", mContext.getString(R.string.too_many_advertisers));
+                        break;
+                }
+                textState.setText(errorText);
             }
         };
 
