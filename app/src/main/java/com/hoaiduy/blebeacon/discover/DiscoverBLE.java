@@ -36,6 +36,7 @@ public class DiscoverBLE {
 
     private Context mContext;
     private BluetoothLeScanner mBluetoothLeScanner;
+    private BluetoothAdapter mBluetoothAdapter;
     private List<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
     private Handler mHandler;
     private ScanCallback mCallback;
@@ -48,8 +49,7 @@ public class DiscoverBLE {
         mHandler = new Handler();
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
-        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
     }
 
     //dialog1Device will show if BLE scanned and saw 1 device in the list
@@ -120,6 +120,9 @@ public class DiscoverBLE {
         ScanSettings settings = new ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
                 .build();
+
+        mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+
         try {
 
             //stop scanning after 3s

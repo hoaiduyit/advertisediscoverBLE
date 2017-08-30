@@ -63,8 +63,8 @@ public class BLEDeviceAdapter extends RecyclerView.Adapter<BLEDeviceAdapter.Devi
         assert dataName != null;
         byte[] convert = dataName.getBytes();
         byte[] byteArr = Base64.decode(convert, Base64.DEFAULT);
-        String encode = new String(byteArr);
-        String[] sub = encode.split(":");
+        String decode = new String(byteArr);
+        String[] sub = decode.split(":");
         String amount = sub[1];
         holder.serviceData.setText("Amount: " + amount);
         holder.ll_item.setOnClickListener(view -> {
