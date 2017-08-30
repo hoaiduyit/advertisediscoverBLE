@@ -1,24 +1,18 @@
 package com.hoaiduy.blebeacon.discover;
 
-import android.app.Dialog;
-import android.app.ProgressDialog;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
-import android.content.Context;
 import android.os.Build;
-import android.os.Handler;
 import android.os.ParcelUuid;
 import android.support.annotation.RequiresApi;
-import android.util.Base64;
 import android.util.Log;
-import android.widget.TextView;
 
 import com.hoaiduy.blebeacon.view.BLEDeviceAdapter;
 
@@ -34,33 +28,21 @@ import java.util.UUID;
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class DiscoverBLE {
 
-    private Context mContext;
+    private Activity mActivity;
     private BluetoothLeScanner mBluetoothLeScanner;
     private BluetoothAdapter mBluetoothAdapter;
     private List<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
-    private Handler mHandler;
     private ScanCallback mCallback;
-    private int scanTime = 3000;
 
-    public DiscoverBLE(Context context, ArrayList<BluetoothDevice> listDevices){
-        this.mContext = context;
+    public DiscoverBLE(Activity activity, ArrayList<BluetoothDevice> listDevices){
+        this.mActivity = activity;
         this.mDeviceList = listDevices;
-
-        mHandler = new Handler();
-
-        final BluetoothManager mBluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        final BluetoothManager mBluetoothManager = (BluetoothManager) activity.getSystemService(Activity.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
     }
 
-    //dialog1Device will show if BLE scanned and saw 1 device in the list
-    //textAmountDialog show text message in dialog1Device
-    //progressDialog will spin before scan complete
     //adapter will change data for every single item was added in the list. We can use another custom adapter to replace this.
-    public void startScan(String serviceUUID,
-                          Dialog dialog1Device,
-                          TextView textAmountDialog,
-                          ProgressDialog progressDialog,
-                          BLEDeviceAdapter adapter){
+    public void startScan(String serviceUUID, BLEDeviceAdapter adapter){
 
         ParcelUuid uuid = new ParcelUuid(UUID.fromString(serviceUUID));
 
@@ -68,33 +50,10 @@ public class DiscoverBLE {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 if (result != null){
-                    ScanRecord scanRecord = result.getScanRecord();
                     BluetoothDevice device = result.getDevice();
-                    List<ParcelUuid> serviceUUIDs = scanRecord.getServiceUuids();
-                    for (ParcelUuid uuid1 : serviceUUIDs){
-                        if (uuid1.equals(uuid)){
-                            String dataName = scanRecord.getDeviceName();
-                            assert dataName != null;
-                            byte[] convert = dataName.getBytes();
-                            byte[] byteArr = Base64.decode(convert, Base64.DEFAULT);
-                            String decode = new String(byteArr);
-                            String[] sub = decode.split(":");
-                            String indicator = sub[0];
-                            String amount = sub[1];
-                            if (indicator.equalsIgnoreCase("mp")){
-                                mDeviceList.add(device);
-                                removeDuplicateWithOrder(mDeviceList);
-                                adapter.notifyDataSetChanged();
-
-                                //immediately show text if after scan list has 1 device
-                                if (mDeviceList.size() != 0){
-                                    if (mDeviceList.size() < 2){
-                                        textAmountDialog.setText("Do you want to send " + amount);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    mDeviceList.add(device);
+                    removeDuplicateWithOrder(mDeviceList);
+                    adapter.notifyDataSetChanged();
                 }
             }
 
@@ -124,27 +83,19 @@ public class DiscoverBLE {
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 
         try {
-
-            //stop scanning after 3s
-            mHandler.postDelayed(() -> {
-                mBluetoothLeScanner.stopScan(mCallback);
-                progressDialog.show();
-                if (mDeviceList.size() != 0){
-                    if (mDeviceList.size() < 2){
-                        progressDialog.dismiss();
-                        dialog1Device.show();
-                    } else {
-                        progressDialog.dismiss();
-                    }
-                } else {
-                    progressDialog.dismiss();
-                }
-            }, scanTime);
             mBluetoothLeScanner.startScan(filters, settings, mCallback);
         }catch (Exception e){
             e.printStackTrace();
         }
 
+    }
+
+    public void stopScan(){
+        try {
+            mBluetoothLeScanner.stopScan(mCallback);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     private static List<BluetoothDevice> removeDuplicateWithOrder(List<BluetoothDevice> deviceList)
