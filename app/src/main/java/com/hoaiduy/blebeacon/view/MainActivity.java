@@ -4,20 +4,18 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
-    private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
 
     @BindView(R.id.btnAdvertise)
     Button btnAdvertise;
@@ -69,23 +66,20 @@ public class MainActivity extends AppCompatActivity {
     private ProgressDialog progressDialog;
     private Dialog dialogItem;
     TextView txtAmountSend, btnNo, btnYes;
+    private Handler mHandler;
+    private int scanTime = 3000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter mBluetoothAdapter = mBluetoothManager.getAdapter();
+
+        mHandler = new Handler();
 
         if (!this.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             btnAdvertise.setEnabled(false);
             btnDiscover.setEnabled(false);
-        }
-
-        if (!mBluetoothAdapter.isEnabled()){
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, MY_BLUETOOTH_ENABLE_REQUEST_ID);
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
@@ -170,33 +164,40 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnRequest.setOnClickListener(view -> {
-            if (ll_recycle.getVisibility() == View.VISIBLE){
-                String amount = txtAmount.getText().toString();
-                ll_adv.setVisibility(View.VISIBLE);
-                ll_recycle.setVisibility(View.GONE);
-                dialog.dismiss();
-                advertiseBLE.startAdvertise(amount,
-                        getString(R.string.uuid),
-                        txtState,
-                        txtViewAmount);
-            } else {
-                String amount = txtAmount.getText().toString();
-                ll_adv.setVisibility(View.VISIBLE);
-                dialog.dismiss();
-                advertiseBLE.startAdvertise(amount,
-                        getString(R.string.uuid),
-                        txtState,
-                        txtViewAmount);
+            String amount = "mp:" + txtAmount.getText().toString();
+            byte[] byteArr = amount.getBytes();
+            byte[] encode = Base64.encode(byteArr, Base64.DEFAULT);
+            String stringByte = new String(encode);
+
+            ll_adv.setVisibility(View.VISIBLE);
+            ll_recycle.setVisibility(View.GONE);
+            dialog.dismiss();
+            advertiseBLE.startAdvertise(stringByte, getString(R.string.uuid));
+            if (advertiseBLE.isAdvertising()){
+                txtState.setText("Advertising..");
+                txtViewAmount.setText(amount);
             }
         });
     }
 
     private void notAdvertising() {
-        discoverBLE.startScan(getString(R.string.uuid),
-                dialogItem,
-                txtAmountSend,
-                progressDialog,
-                adapter);
+        discoverBLE.startScan(getString(R.string.uuid), adapter);
+        mHandler.postDelayed(() -> {
+            discoverBLE.stopScan();
+            progressDialog.show();{
+                if (!mDeviceList.isEmpty()){
+                    if (mDeviceList.size() < 2){
+                        progressDialog.dismiss();
+                        txtAmountSend.setText("Do you want to send this money?");
+                        dialog.show();
+                    }else {
+                        progressDialog.dismiss();
+                    }
+                }else {
+                    progressDialog.dismiss();
+                }
+            }
+        }, scanTime);
         ll_recycle.setVisibility(View.VISIBLE);
         recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
@@ -204,11 +205,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void isAdvertising() {
         advertiseBLE.stopAdvertise();
-        discoverBLE.startScan(getString(R.string.uuid),
-                dialogItem,
-                txtAmountSend,
-                progressDialog,
-                adapter);
+        discoverBLE.startScan(getString(R.string.uuid), adapter);
+        mHandler.postDelayed(() -> {
+            discoverBLE.stopScan();
+            progressDialog.show();{
+                if (!mDeviceList.isEmpty()){
+                    if (mDeviceList.size() < 2){
+                        progressDialog.dismiss();
+                        txtAmountSend.setText("Do you want to send this money?");
+                        dialog.show();
+                    }else {
+                        progressDialog.dismiss();
+                    }
+                }else {
+                    progressDialog.dismiss();
+                }
+            }
+        }, scanTime);
         ll_adv.setVisibility(View.GONE);
         ll_recycle.setVisibility(View.VISIBLE);
         recyclerView.setAdapter(adapter);
