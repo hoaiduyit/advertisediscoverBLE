@@ -9,12 +9,11 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Intent;
 import android.os.Build;
 import android.os.ParcelUuid;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
-
-import com.hoaiduy.blebeacon.view.BLEDeviceAdapter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +33,11 @@ public class DiscoverBLE {
     private List<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
     private ScanCallback mCallback;
 
+    public final static String ACTION_DISCOVER_SUCCESS =
+            "com.mysquar.payment.ble.discover.ACTION_DISCOVER_SUCCESS";
+    public final static String ACTION_DISCOVER_FAIL =
+            "com.mysquar.payment.ble.discover.ACTION_DISCOVER_FAIL";
+
     public DiscoverBLE(Activity activity, ArrayList<BluetoothDevice> listDevices){
         this.mActivity = activity;
         this.mDeviceList = listDevices;
@@ -41,19 +45,21 @@ public class DiscoverBLE {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
     }
 
-    //adapter will change data for every single item was added in the list. We can use another custom adapter to replace this.
-    public void startScan(String serviceUUID, BLEDeviceAdapter adapter){
+    public void startScan(String serviceUUID){
 
         ParcelUuid uuid = new ParcelUuid(UUID.fromString(serviceUUID));
 
         mCallback = new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
+                String intentAction;
+                super.onScanResult(callbackType, result);
+                intentAction = ACTION_DISCOVER_SUCCESS;
+                broadcastUpdate(intentAction);
                 if (result != null){
                     BluetoothDevice device = result.getDevice();
                     mDeviceList.add(device);
                     removeDuplicateWithOrder(mDeviceList);
-                    adapter.notifyDataSetChanged();
                 }
             }
 
@@ -64,7 +70,10 @@ public class DiscoverBLE {
 
             @Override
             public void onScanFailed(int errorCode) {
+                String intentAction;
                 super.onScanFailed(errorCode);
+                intentAction = ACTION_DISCOVER_FAIL;
+                broadcastUpdate(intentAction);
                 Log.e("TAG", "Scan failed " + errorCode);
             }
         };
@@ -112,4 +121,8 @@ public class DiscoverBLE {
         return deviceList;
     }
 
+    private void broadcastUpdate(final String action) {
+        final Intent intent = new Intent(action);
+        mActivity.sendBroadcast(intent);
+    }
 }

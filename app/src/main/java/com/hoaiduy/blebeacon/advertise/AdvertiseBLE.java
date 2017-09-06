@@ -30,10 +30,6 @@ public class AdvertiseBLE {
     private AdvertiseCallback advertiseCallback;
     private static final int MY_BLUETOOTH_ENABLE_REQUEST_ID = 6;
 
-    private int mAdvertiseState = advertiseFail;
-    private static final int advertiseFail = 0;
-    private static final int advertiseSuccess = 1;
-
     public final static String ACTION_ADVERTISE_SUCCESS =
             "com.hoaiduy.blebeacon.advertise.ACTION_ADVERTISE_SUCCESS";
     public final static String ACTION_ADVERTISE_FAIL =
@@ -64,7 +60,6 @@ public class AdvertiseBLE {
             public void onStartSuccess(AdvertiseSettings settingsInEffect) {
                 String intentAction;
                 super.onStartSuccess(settingsInEffect);
-                mAdvertiseState = advertiseSuccess;
                 intentAction = ACTION_ADVERTISE_SUCCESS;
                 broadcastUpdate(intentAction);
                 Log.w("TAG", "GATT service ready");
@@ -74,7 +69,6 @@ public class AdvertiseBLE {
             public void onStartFailure(int errorCode) {
                 String intentAction;
                 super.onStartFailure(errorCode);
-                mAdvertiseState = advertiseFail;
                 intentAction = ACTION_ADVERTISE_FAIL;
                 broadcastUpdate(intentAction);
                 switch (errorCode) {

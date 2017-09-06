@@ -5,9 +5,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -30,6 +27,8 @@ import android.widget.TextView;
 import com.hoaiduy.blebeacon.R;
 import com.hoaiduy.blebeacon.advertise.AdvertiseBLE;
 import com.hoaiduy.blebeacon.discover.DiscoverBLE;
+import com.hoaiduy.blebeacon.receiverinterface.BluetoothLeListener;
+import com.hoaiduy.blebeacon.receiverinterface.Receiver;
 import com.hoaiduy.blebeacon.utils.DialogUtils;
 
 import java.util.ArrayList;
@@ -43,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
     private AdvertiseBLE advertiseBLE;
     private DiscoverBLE discoverBLE;
     private BLEDeviceAdapter adapter;
+    private Receiver mReceiver;
     private ArrayList<BluetoothDevice> mDeviceList = new ArrayList<BluetoothDevice>();
+    private ArrayList<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>();
 
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
@@ -72,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
     TextView txtAmountSend, btnNo, btnYes;
     private Handler mHandler;
     private int scanTime = 3000;
+    private String amount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,10 +103,12 @@ public class MainActivity extends AppCompatActivity {
 
         advertiseBLE = new AdvertiseBLE(this);
         discoverBLE = new DiscoverBLE(this, mDeviceList);
+        mReceiver = new Receiver();
 
         setupUI();
         setupDiscoverUI();
         setupDialog();
+        setupBroadcastReceiver();
     }
 
     @Override
@@ -180,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnRequest.setOnClickListener(view -> {
-            String amount = "mp:" + txtAmount.getText().toString();
+            amount = "mp:" + txtAmount.getText().toString();
             byte[] byteArr = amount.getBytes();
             byte[] encode = Base64.encode(byteArr, Base64.DEFAULT);
             String stringByte = new String(encode);
@@ -193,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void notAdvertising() {
-        discoverBLE.startScan(getString(R.string.uuid), adapter);
+        discoverBLE.startScan(getString(R.string.uuid));
         mHandler.postDelayed(() -> {
             discoverBLE.stopScan();
             progressDialog.show();{
@@ -217,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void isAdvertising() {
         advertiseBLE.stopAdvertise();
-        discoverBLE.startScan(getString(R.string.uuid), adapter);
+        discoverBLE.startScan(getString(R.string.uuid));
         mHandler.postDelayed(() -> {
             discoverBLE.stopScan();
             progressDialog.show();{
@@ -258,18 +262,42 @@ public class MainActivity extends AppCompatActivity {
         btnNo.setOnClickListener(view -> dialogItem.dismiss());
     }
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-
-            if (AdvertiseBLE.ACTION_ADVERTISE_SUCCESS.equals(action)){
-                txtState.setText("Advertising...");
-            } else if (AdvertiseBLE.ACTION_ADVERTISE_FAIL.equals(action)){
-                txtState.setText("Advertise failed");
+    private void setupBroadcastReceiver() {
+        mReceiver.setOnBluetoothLeListener(new BluetoothLeListener() {
+            @Override
+            public void onAdvertiseSuccess(String action) {
+                if (AdvertiseBLE.ACTION_ADVERTISE_SUCCESS.equals(action)){
+                    txtState.setText("Advertising...");
+                    txtViewAmount.setText(amount);
+                }
             }
-        }
-    };
+
+            @Override
+            public void onAdvertiseFail(String action) {
+                if (AdvertiseBLE.ACTION_ADVERTISE_FAIL.equals(action)){
+                    txtState.setText("Advertise fail");
+                    txtViewAmount.setText("");
+                }
+            }
+
+            @Override
+            public void onDiscoverSuccess(String action) {
+                if (DiscoverBLE.ACTION_DISCOVER_SUCCESS.equals(action)){
+                    for (BluetoothDevice device : mDeviceList){
+                        deviceList.add(device);
+                        adapter.notifyDataSetChanged();
+                    }
+                }
+            }
+
+            @Override
+            public void onDiscoverFail(String action) {
+                if (DiscoverBLE.ACTION_DISCOVER_FAIL.equals(action)){
+                    return;
+                }
+            }
+        });
+    }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
