@@ -175,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 mDeviceList.clear();
+                deviceList.clear();
                 if (advertiseBLE.isAdvertising()){
                     isAdvertising();
                 }else {
@@ -205,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
                     if (mDeviceList.size() < 2){
                         progressDialog.dismiss();
                         txtAmountSend.setText("Do you want to send this money?");
-                        dialog.show();
+                        dialogItem.show();
                     }else {
                         progressDialog.dismiss();
                     }
@@ -229,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     if (mDeviceList.size() < 2){
                         progressDialog.dismiss();
                         txtAmountSend.setText("Do you want to send this money?");
-                        dialog.show();
+                        dialogItem.show();
                     }else {
                         progressDialog.dismiss();
                     }
@@ -303,6 +304,8 @@ public class MainActivity extends AppCompatActivity {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(AdvertiseBLE.ACTION_ADVERTISE_SUCCESS);
         intentFilter.addAction(AdvertiseBLE.ACTION_ADVERTISE_FAIL);
+        intentFilter.addAction(DiscoverBLE.ACTION_DISCOVER_SUCCESS);
+        intentFilter.addAction(DiscoverBLE.ACTION_DISCOVER_FAIL);
         return intentFilter;
     }
 }
